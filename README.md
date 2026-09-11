@@ -4,6 +4,8 @@ An AI IT support assistant that retrieves relevant historical tickets and **veri
 
 Minimal business scenario implemented end-to-end: **"employee reset their password but still can't log in to company systems."**
 
+![Demo: create a ticket, diagnose, confirm, resolve, and reuse a saved playbook](docs/demo.gif)
+
 ---
 
 ## 1. Repository layout
