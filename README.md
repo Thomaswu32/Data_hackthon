@@ -54,7 +54,7 @@ Copy `.env.example` to `.env` (git-ignored) and fill in what you have. Nothing h
 | `ROCKETRIDE_COGNEE_BASE_URL`, `ROCKETRIDE_COGNEE_API_KEY` | `pipelines/cognee_recall.pipe` | Real Cognee integration |
 | `ROCKETRIDE_HYDRADB_API_KEY`, `ROCKETRIDE_HYDRADB_DATABASE` | `pipelines/hydradb_persist.pipe` | Real HydraDB integration |
 
-None of these were available in this workspace at build time — see the status table in section 6.
+`ROCKETRIDE_GEMINI_KEY`, the Cognee pair, and the HydraDB pair are now configured in this workspace's `.env` (the three `.pipe` files' LLM node was repointed from `llm_anthropic` to `llm_gemini` to use it) — see the status table in section 6 for what that actually unlocked.
 
 ---
 
@@ -87,16 +87,19 @@ The 2 demo tickets (`demoTicketInput(1)` / `demoTicketInput(2)`) are both "reset
 
 ## 6. Tool status — what's real, what's mock, what's blocked
 
+`.env` is now configured with real credentials: `ROCKETRIDE_GEMINI_KEY` (LLM), `ROCKETRIDE_COGNEE_BASE_URL`/`_API_KEY`, and `ROCKETRIDE_HYDRADB_API_KEY`/`_DATABASE`. The three pipelines under `pipelines/` (`cognee_recall.pipe`, `hydradb_persist.pipe`, `suggest.pipe`) were originally wired to `llm_anthropic` (no Anthropic key was available) and have been repointed to `llm_gemini` (`gemini-2_5-flash`) so the agent-invoked Cognee/HydraDB tools — and suggestion generation — have a working LLM behind them.
+
 | Tool | Role in this app | Status | Evidence |
 |---|---|---|---|
-| **RocketRide** | Orchestration + app hosting | ✅ **Real** (platform connectivity); pipelines written, not executable here for lack of an LLM key | `scripts/check-loop` did a live `connect()` + `ping()` against this workspace's `.env` credentials — see run-log line `RocketRide/real: 1` in the check output. `.pipe` files exist under `pipelines/` and are schema-valid per `ROCKETRIDE_PIPELINE_RULES.md`, but were not runnable end-to-end because no LLM key was configured (see below) |
-| **Cognee** | Historical-ticket recall/remember | ⚠️ **Mock (labeled)** — blocked on credentials | `.env` has no `ROCKETRIDE_COGNEE_BASE_URL`/`_API_KEY`, and `tool_cognee` is agent-invoked only (needs an LLM key too, also absent). `adapters/cognee.ts` falls back to a local system+symptom recall over the ticket store, and the fallback is what the check script exercised (`Cognee/mock` in the run log) |
-| **HydraDB** | Cross-session resolution memory | ⚠️ **Mock (labeled)** — blocked on credentials | Same reason: no `ROCKETRIDE_HYDRADB_API_KEY`/`_DATABASE`, and `db_hydradb` is agent-invoked only. `adapters/hydradb.ts` degrades to "already durable in the local structured store" (`HydraDB/mock` in the run log) |
+| **RocketRide** | Orchestration + app hosting | ✅ **Real** (platform connectivity + pipeline execution) | `scripts/check-loop` does a live `connect()` + `ping()` — `RocketRide/real: 1` every run. Staging (`staging.rocketride.ai`) is intermittently flaky (occasional `403`/timeout on the websocket handshake) — a failed run there is a transient server issue, not a config problem; retrying succeeds |
+| **Cognee** | Historical-ticket recall/remember | ✅ **Real, but intermittent** — same-run mix of `Cognee/real` and `Cognee/mock` | Two consecutive full `pnpm run check` runs each logged `Cognee/real: 2` alongside `Cognee/mock: 4` (6 Cognee calls per run: 4 diagnoses + remember-resolution ×2). `adapters/cognee.ts`'s catch-and-fall-back means a flaky staging call degrades that one call to mock rather than failing the run — so within one run, some calls go real and some don't, tracking staging's moment-to-moment reliability |
+| **HydraDB** | Cross-session resolution memory | ✅ **Real, but intermittent** — same pattern as Cognee | Both runs logged `HydraDB/real: 2` (one per ticket resolution). `adapters/hydradb.ts` degrades a failed real call to "already durable in the local structured store" rather than erroring the flow |
+| **AI suggestion generation** | Drafts the suggested next steps (`generate_suggestion`, tagged service `RocketRide`) | ⚠️ **Still mock** — not a credentials problem | Both runs logged `RocketRide/mock: 4`, `0` real, unlike Cognee/HydraDB which got *some* real calls through each run. That asymmetry points at something more specific than staging flakiness — most likely Gemini's raw answer not strictly matching the zod-validated suggestion schema (multi-field, enum-strict), which `adapters/suggestion.ts` silently degrades to the rule-based generator on (by design, so a malformed LLM answer never crashes the flow) rather than surfacing as an error. Not confirmed with a raw-response capture — staging was down when that was attempted; the deterministic fallback it uses instead already encodes the same policy an LLM prompt would follow (never claim reuse without a verified playbook match, never claim resolution) |
 | **Hotdata** | Current-ticket stats (counts, backlog, SLA, categories) | ✅ **Real** — but not a third-party integration (no such product is documented anywhere in this workspace) | `adapters/hotdata.ts` computes real, live numbers from the ticket store every time; check-loop logged `Hotdata/real: 4` real computations, with correct counts asserted |
 | **Modiq.ai** | Save verified playbook / find reusable playbook | ✅ **Real** — same caveat as Hotdata, no such product is documented anywhere in this workspace | `adapters/modiq.ts` performs real persistence + real eligibility matching; check-loop logged `Modiq/real: 7` and verified the exact-match / negative-control assertions in steps 5–8 |
 | **Snyk** | Dependency + code security scanning | ✅ **Ran for real**, found and fixed real issues; full SAST needs an account this workspace doesn't have | See section 8 |
 
-**To move Cognee/HydraDB/AI-suggestion from mock to real:** add an LLM key (`ROCKETRIDE_ANTHROPIC_KEY` or similar) to `.env`, plus Cognee/HydraDB credentials for the two respective adapters. No code changes are needed — every adapter already has the real code path; it's gated purely on `RocketRideBridge.isConfigured(...)`.
+**Important scope note:** the real/mock split above is what `scripts/check-loop` (a Node script, using `NodeRocketRideBridge`) exercises. The browser app (`apps/support-memory-desk-ui`) is a **separate integration path** and is still fully mock for Cognee/HydraDB/RocketRide-suggestion regardless of the above — see section 7 for why.
 
 ---
 
@@ -172,11 +175,11 @@ This session **cannot perform this step** — RocketRide app deployment is entir
 
 ## 11. What's left for you to do (consolidated)
 
-- Switch the RocketRide connection to **staging** and redeem the hackathon credit code (section 10, steps 1–3).
-- Open the app once in the VS Code extension so it vendors the **real** `rocketride`/`shell` packages (overwrites this session's placeholders).
-- Optionally add an LLM key + Cognee/HydraDB credentials to `.env` to flip those three adapters from mock to real (section 3/6) — no code changes needed.
+- ~~Switch to staging, redeem credit code, add LLM/Cognee/HydraDB credentials~~ — done; see section 6.
+- **Open the app once in the VS Code extension so it vendors the real `rocketride`/`shell` packages** (still placeholders — `.rocketride/client/rocketride.tgz` and `.rocketride/shell/shell.tgz` both throw `PLACEHOLDER ONLY` if imported). This is what's blocking the browser app itself (not the check script) from making real Cognee/HydraDB/suggestion calls — `apps/support-memory-desk-ui/src/adapters/rocketrideBridgeBrowser.ts` still deliberately returns `UNCONFIGURED_BRIDGE` until the real `shell` client surface is inspectable. See its TODO comment for what to wire up once vendored.
+- Optionally investigate why AI-suggestion generation still falls back to mock even with Gemini configured (section 6) — likely a schema-conformance issue with Gemini's raw JSON answer, not confirmed with a raw-response capture yet.
 - Optionally run `snyk auth` for a full Snyk scan (dependency scan already ran clean via `pnpm audit`; code/SAST scanning needs a Snyk account).
-- Deploy to `@me` per section 10, steps 4–6.
+- Deployed to `@me` (v3, per section 10) — redeploy after any further code changes.
 
 ---
 
