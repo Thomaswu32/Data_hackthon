@@ -1,0 +1,42 @@
+{
+	"name": "local-support-memory-desk",
+	"version": "0.1.0",
+	"private": true,
+	"description": "Compounding Support Desk — an AI IT support assistant that retrieves prior tickets, drafts a grounded suggestion, and saves verified fixes as reusable playbooks.",
+	"license": "MIT",
+	"appManifest": {
+		"id": "thomaswu.support-memory-desk",
+		"publisher": "thomaswu",
+		"name": "Compounding Support Desk",
+		"description": "Retrieves relevant historical tickets and verified playbooks, checks current ticket volume for mass-incident signals, drafts a grounded suggestion, and — once a human confirms the fix actually worked — saves it as a reusable playbook for qualifying future tickets.",
+		"icon": "./icon.svg",
+		"readme": "./README.md",
+		"categories": ["custom"],
+		"mode": "free",
+		"authenticated": false,
+		"projectId": "059e6a89-6ad8-4ef1-8636-f96e8fcfb45d",
+		"include": ["packages/core"]
+	},
+	"scripts": {
+		"dev": "rsbuild dev",
+		"build": "tsc --noEmit && rsbuild build",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@support-desk/core": "workspace:*",
+		"react": "^18.2.0",
+		"react-dom": "^18.2.0",
+		"rocketride": "file:../../.rocketride/client/rocketride.tgz",
+		"shell": "file:../../.rocketride/shell/shell.tgz"
+	},
+	"devDependencies": {
+		"@module-federation/rsbuild-plugin": "2.5.1",
+		"@rsbuild/core": "~2.0.11",
+		"@rsbuild/plugin-react": "~2.0.1",
+		"@types/node": "^20.19.41",
+		"@types/react": "^18.2.0",
+		"@types/react-dom": "^18.2.0",
+		"react-refresh": "^0.14.2",
+		"typescript": "^5.3.0"
+	}
+}

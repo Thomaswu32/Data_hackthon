@@ -1,0 +1,175 @@
+{
+  "components": [
+    {
+      "id": "chat_1",
+      "provider": "chat",
+      "config": {
+        "hideForm": true,
+        "mode": "Source",
+        "parameters": {},
+        "type": "chat"
+      },
+      "ui": {
+        "position": {
+          "x": 20,
+          "y": 200
+        },
+        "measured": {
+          "width": 150,
+          "height": 66
+        },
+        "nodeType": "default",
+        "formDataValid": true
+      }
+    },
+    {
+      "id": "agent_rocketride_1",
+      "provider": "agent_rocketride",
+      "config": {
+        "agent_description": "HydraDB persistence proxy for the Compounding Support Desk",
+        "instructions": [
+          "You only relay calls to the hydradb tool. You never invent ticket data.",
+          "When asked to store a resolution memory, call the hydradb store-memory tool with the given text and return ONLY JSON: {\"stored\":true}.",
+          "When asked to recall, call the hydradb recall-memory tool and return ONLY JSON: {\"results\":[...]} using whatever the tool returned, verbatim."
+        ],
+        "max_waves": 3,
+        "parameters": {}
+      },
+      "input": [
+        {
+          "lane": "questions",
+          "from": "chat_1"
+        }
+      ],
+      "ui": {
+        "position": {
+          "x": 240,
+          "y": 140
+        },
+        "measured": {
+          "width": 150,
+          "height": 86
+        },
+        "nodeType": "default",
+        "formDataValid": true
+      }
+    },
+    {
+      "id": "llm_anthropic_1",
+      "provider": "llm_gemini",
+      "config": {
+        "profile": "gemini-2_5-flash",
+        "gemini-2_5-flash": {
+          "apikey": "${ROCKETRIDE_GEMINI_KEY}"
+        },
+        "parameters": {}
+      },
+      "control": [
+        {
+          "classType": "llm",
+          "from": "agent_rocketride_1"
+        }
+      ],
+      "ui": {
+        "position": {
+          "x": 240,
+          "y": 20
+        },
+        "measured": {
+          "width": 150,
+          "height": 66
+        },
+        "nodeType": "default",
+        "formDataValid": true
+      }
+    },
+    {
+      "id": "memory_internal_1",
+      "provider": "memory_internal",
+      "config": {
+        "type": "memory_internal"
+      },
+      "control": [
+        {
+          "classType": "memory",
+          "from": "agent_rocketride_1"
+        }
+      ],
+      "ui": {
+        "position": {
+          "x": 240,
+          "y": 280
+        },
+        "measured": {
+          "width": 150,
+          "height": 66
+        },
+        "nodeType": "default",
+        "formDataValid": true
+      }
+    },
+    {
+      "id": "db_hydradb_1",
+      "provider": "db_hydradb",
+      "config": {
+        "profile": "default",
+        "default": {
+          "api_key": "${ROCKETRIDE_HYDRADB_API_KEY}",
+          "database": "${ROCKETRIDE_HYDRADB_DATABASE}",
+          "collection": "support_desk",
+          "max_results": 10
+        }
+      },
+      "control": [
+        {
+          "classType": "tool",
+          "from": "agent_rocketride_1"
+        }
+      ],
+      "ui": {
+        "position": {
+          "x": 240,
+          "y": 380
+        },
+        "measured": {
+          "width": 150,
+          "height": 40
+        },
+        "nodeType": "default",
+        "formDataValid": true
+      }
+    },
+    {
+      "id": "response_answers_1",
+      "provider": "response_answers",
+      "config": {
+        "laneName": "answers"
+      },
+      "input": [
+        {
+          "lane": "answers",
+          "from": "agent_rocketride_1"
+        }
+      ],
+      "ui": {
+        "position": {
+          "x": 460,
+          "y": 140
+        },
+        "measured": {
+          "width": 150,
+          "height": 66
+        },
+        "nodeType": "default",
+        "formDataValid": true
+      }
+    }
+  ],
+  "project_id": "2d24fca7-67c2-4990-9856-2bbb196cfee8",
+  "viewport": {
+    "x": 0,
+    "y": 0,
+    "zoom": 1
+  },
+  "version": 1
+}

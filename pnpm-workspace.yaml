@@ -1,0 +1,22 @@
+# RocketRide app workspace — one root install links every app under apps/.
+# packages/* holds shared, RocketRide-independent TypeScript (usable from
+# plain Node scripts and from the app bundle alike).
+packages:
+  - 'apps/*'
+  - 'packages/*'
+  - 'scripts/*'
+allowBuilds:
+  esbuild: true
+
+# Snyk (and pnpm audit, our fallback since no Snyk account is configured in
+# this workspace) flagged undici/adm-zip vulnerabilities pulled in
+# transitively by the RocketRide-mandated @module-federation/rsbuild-plugin
+# devDependency (dts-plugin's build-time HTTP client / zip extraction —
+# never shipped in the app's built dist/ output). These overrides pin the
+# transitive versions up to their patched releases without changing the
+# required rsbuild-plugin version itself. See README.md's Snyk section.
+minimumReleaseAgeExclude:
+  - adm-zip@0.6.1
+overrides:
+  undici@>=7.0.0 <7.29.0: '>=7.29.0'
+  adm-zip@>=0.5.9 <=0.6.0: '>=0.6.1'

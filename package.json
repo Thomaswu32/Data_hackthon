@@ -1,0 +1,14 @@
+{
+	"name": "support-memory-desk-workspace",
+	"version": "0.1.0",
+	"private": true,
+	"description": "Compounding Support Desk — RocketRide hackathon workspace root.",
+	"scripts": {
+		"typecheck": "pnpm -r --filter=@support-desk/core --filter=./scripts/check-loop run typecheck",
+		"typecheck:app": "pnpm --filter=local-support-memory-desk run typecheck",
+		"build:app": "pnpm --filter=local-support-memory-desk run build",
+		"check": "pnpm --filter=@support-desk/check-loop run check",
+		"demo": "pnpm --filter=@support-desk/check-loop run demo",
+		"audit": "pnpm audit"
+	}
+}

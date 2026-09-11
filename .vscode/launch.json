@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Thomas",
+      "type": "msedge",
+      "request": "launch",
+      "url": "https://api.rocketride.ai:443/?appid=local.thomas&rrdev=1",
+      "webRoot": "${workspaceFolder}/apps/thomas-ui",
+      "sourceMapPathOverrides": {
+        "webpack:///./*": "${workspaceFolder}/apps/thomas-ui/*",
+        "webpack:///*": "*"
+      }
+    }
+  ]
+}

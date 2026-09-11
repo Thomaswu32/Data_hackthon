@@ -1,0 +1,21 @@
+{
+	"name": "@support-desk/check-loop",
+	"version": "0.1.0",
+	"private": true,
+	"description": "Node-side verification harness for the Compounding Support Desk: proves the create -> save -> recall -> hotdata -> suggest -> execute -> resolve -> save-playbook -> reuse loop end-to-end from the command line, independent of the RocketRide app UI/shell.",
+	"type": "module",
+	"scripts": {
+		"check": "tsx src/check.ts",
+		"demo": "tsx src/check.ts --narrate",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@support-desk/core": "workspace:*",
+		"rocketride": "^1.3.0"
+	},
+	"devDependencies": {
+		"tsx": "^4.19.0",
+		"typescript": "^5.3.0",
+		"@types/node": "^20.19.41"
+	}
+}

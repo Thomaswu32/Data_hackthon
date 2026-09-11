@@ -1,0 +1,9 @@
+.rocketride/
+.env
+
+# Dependencies and build output (machine-generated)
+**/node_modules/
+**/dist/
+
+# Local persisted state from the check-loop verification script
+scripts/check-loop/.demo-state.json
